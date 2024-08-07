@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "RadioConverter.Console": {
+        "commandName": "Project",
+        "commandLineArgs": "\"F:\\Users\\borrrden\\Desktop\\Repeater Directory 240614.csv\" \"F:\\Users\\borrrden\\Desktop\\Test.csv\""
+    }
+  }
+}

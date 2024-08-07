@@ -1,0 +1,10 @@
+﻿inputs:
+  - Call
+  - Input
+  - Output
+script: |
+   function Filter(name, input, output)
+    inputNum = tonumber(input)
+    outputNum = tonumber(output)
+    return Is2mBand(inputNum) and Is2mBand(outputNum)
+   end

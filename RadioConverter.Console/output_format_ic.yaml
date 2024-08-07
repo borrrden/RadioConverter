@@ -1,0 +1,74 @@
+﻿output:
+  columns:
+    - name: Group No
+      type: constant
+      value: 0
+    - name: Group Name
+      type: constant
+      value: VIC 2M
+    - name: Name
+      type: mapping
+      source: Call
+    - name: SEL
+      type: constant
+      value: OFF
+    - name: Frequency
+      type: mapping
+      source: Output
+    - name: Dup
+      type: lua
+      inputs:
+        - type: mapping
+          source: Input
+        - type: mapping
+          source: Output
+      script: |
+        function Calculate(input, output)
+          if output > input then
+            return "DUP+"
+          elseif output > input then
+            return "DUP-"
+          else
+            return "OFF"
+          end
+        end
+    - name: Offset
+      type: lua
+      inputs:
+        - type: mapping
+          source: Input
+        - type: mapping
+          source: Output
+      script: |
+        function Calculate(input, output)
+           return Round(math.abs(input - output), 3)
+        end
+    - name: Mode
+      type: constant
+      value: FM
+    - name: DATA
+      type: constant
+      value: OFF
+    - name: Filter
+      type: constant
+      value: 1
+    - name: Tone
+      type: lua
+      inputs:
+        - type: mapping
+          source: Tone
+      script: |
+        function Calculate(tone)
+          if tone == "-" then
+            return "OFF"
+          else
+            return "TONE"
+          end
+        end
+    - name: Repeater Tone
+      type: mapping
+      source: Tone
+    - name: TSQL Frequency
+      type: constant
+      value: 88.5
+      
