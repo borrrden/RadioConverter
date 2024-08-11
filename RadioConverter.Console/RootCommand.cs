@@ -16,9 +16,9 @@ namespace RadioConverter.Console
 {
     using Console = System.Console;
 
-    public sealed class RootCommand : Command<RootCommand.Settings>
+    public sealed class RootCommand : AsyncCommand<RootCommand.Settings>
     {
-        public override int Execute(CommandContext context, Settings settings)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
         {
             using var filterYaml = File.OpenRead("C:\\Development\\RadioConverter\\RadioConverter.Console\\filter.yaml");
             var filterParser = new FilterParser(filterYaml);
@@ -30,44 +30,12 @@ namespace RadioConverter.Console
             var parser = new RepeaterDirectoryParser();
             var results = parser.Read(File.OpenRead(settings.Input), settings.NoDigital);
 
-            var retVal = new List<Dictionary<string, string>>();
-
-            foreach (var result in results)
-            {
-                if (!filterParser.ShouldInclude(result))
-                {
-                    continue;
-                }
-
-                var nextResult = new Dictionary<string, string>();
-                foreach (var transform in transforms)
-                {
-                    nextResult[transform.Key] = transform.Value.Execute(result);
-                }
-
-                retVal.Add(nextResult);
-            }
-
-            using var fout = File.Open(settings.Output, FileMode.Truncate, FileAccess.Write, FileShare.Read);
-            using var writer = new StreamWriter(fout);
-            using var csvOut = new CsvWriter(writer, CultureInfo.InvariantCulture);
+            var outputData = TransformParser.Apply(results, transforms);
 
             var keys = transformParser.Keys();
-            foreach (var key in keys)
-            {
-                csvOut.WriteField(key);
-            }
-
-            csvOut.NextRecord();
-            foreach (var output in retVal)
-            {
-                foreach (var key in keys)
-                {
-                    csvOut.WriteField(output[key]);
-                }
-
-                csvOut.NextRecord();
-            }
+            using var fout = File.Open(settings.Output, FileMode.Truncate, FileAccess.Write, FileShare.Read);
+            var outputWriter = new CsvOutputWriter();
+            await outputWriter.WriteToAsync(keys, outputData, fout);
 
             return 0;
         }

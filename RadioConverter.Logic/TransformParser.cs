@@ -32,6 +32,24 @@ public sealed class TransformParser
         _transformTypes.AddRange(assembly.GetExportedTypes().Where(x => x.IsClass && !x.IsAbstract && x.GetInterface(typeof(ITransform).FullName!) != null));
     }
 
+    public static IReadOnlyList<IReadOnlyDictionary<string, string>> Apply(IReadOnlyList<RepeaterDirectoryEntry> entries, IReadOnlyDictionary<string, ITransform> transforms)
+    {
+        var retVal = new List<Dictionary<string, string>>();
+
+        foreach (var entry in entries)
+        {
+            var nextResult = new Dictionary<string, string>();
+            foreach (var transform in transforms)
+            {
+                nextResult[transform.Key] = transform.Value.Execute(entry);
+            }
+
+            retVal.Add(nextResult);
+        }
+
+        return retVal;
+    }
+
     public IReadOnlyDictionary<string, ITransform> CreateTransforms()
     {
         var retVal = new Dictionary<string, ITransform>();

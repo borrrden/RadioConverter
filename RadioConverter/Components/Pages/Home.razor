@@ -19,6 +19,8 @@
     </script>
 </HeadContent>
 
+<Toasts class="p-3" Messages="_messages" Placement="ToastsPlacement.TopRight" />
+
 <div class="container">
     <div class="row">
         <h1>Convert Repeater Directory</h1>
@@ -42,7 +44,7 @@
         </div>
 
         <div class="col-auto">
-            <InputFile OnChange="OnInputChosen" @key="_inputFileKey" />
+            <InputFile OnChange="OnInputChosen" @key="_inputFileKey" accept=".csv,text/csv" />
         </div>
 
         <div class="col-auto">

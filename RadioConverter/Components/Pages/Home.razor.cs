@@ -18,11 +18,12 @@ namespace RadioConverter.Components.Pages
         private string _outputFormat = "chirp";
         private Button _submitButton = default!;
         private Guid _inputFileKey = Guid.NewGuid();
+        private readonly List<ToastMessage> _messages = [];
 
         [Inject]
         private IJSRuntime JSRuntime { get; set; } = default!;
 
-        private bool SubmitDisabled => _inputFile == null;
+        private bool SubmitDisabled => _inputFile == null || _inputFile.Size == 0;
 
         private static readonly IReadOnlyList<string> OutputFormats = new List<string>
         {
@@ -31,67 +32,63 @@ namespace RadioConverter.Components.Pages
 
         private void OnInputChosen(InputFileChangeEventArgs e)
         {
+            var fileExtension = Path.GetExtension(e.File.Name);
+            if (fileExtension != ".csv")
+            {
+                _inputFileKey = Guid.NewGuid();
+                _messages.Add(new ToastMessage(ToastType.Danger, $"{fileExtension} is not a supported file type!"));
+                return;
+            }
+
+            if (e.File.Size == 0)
+            {
+                _inputFileKey = Guid.NewGuid();
+                _messages.Add(new ToastMessage(ToastType.Warning, $"Empty file selected"));
+                return;
+            }
+
             _inputFile = e.File;
         }
 
         private Task<Stream> Convert(FileStream input)
         {            
             input.Seek(0, SeekOrigin.Begin);
-            return Task.Factory.StartNew<Stream>(() =>
+            return Task.Run(async () =>
             {
                 using var yaml = File.OpenRead(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "outputs", $"output_format_{_outputFormat}.yaml"));
                 var transformParser = new TransformParser(yaml);
                 var transforms = transformParser.CreateTransforms();
 
                 var parser = new RepeaterDirectoryParser();
-                var results = parser.Read(input, true);
-
-                var retVal = new List<Dictionary<string, string>>();
-
-                foreach (var result in results)
+                IReadOnlyList<RepeaterDirectoryEntry> results;
+                try
                 {
-                    var nextResult = new Dictionary<string, string>();
-                    foreach (var transform in transforms)
-                    {
-                        nextResult[transform.Key] = transform.Value.Execute(result);
-                    }
-
-                    retVal.Add(nextResult);
+                    results = parser.Read(input, true);
+                }
+                catch (HeaderValidationException)
+                {
+                    _messages.Add(new ToastMessage(ToastType.Danger, "Input file didn't have proper headers"));
+                    return Stream.Null;
+                }
+                catch (Exception ex)
+                {
+                    _messages.Add(new ToastMessage(ToastType.Danger, "Failed to parse input", ex.Message));
+                    return Stream.Null;
                 }
 
-                var fout = new MemoryStream();
-                using var writer = new StreamWriter(fout, leaveOpen: true);
-                using var csvOut = new CsvWriter(writer, CultureInfo.InvariantCulture);
+                var outputData = TransformParser.Apply(results, transforms);
 
                 var keys = transformParser.Keys();
-                foreach (var key in keys)
-                {
-                    csvOut.WriteField(key);
-                }
-
-                csvOut.NextRecord();
-                foreach (var output in retVal)
-                {
-                    foreach (var key in keys)
-                    {
-                        csvOut.WriteField(output[key]);
-                    }
-
-                    csvOut.NextRecord();
-                }
-
-                csvOut.Flush();
-                fout.Seek(0, SeekOrigin.Begin);
-                return fout;
+                var outStream = new MemoryStream();
+                var outputWriter = new CsvOutputWriter();
+                await outputWriter.WriteToAsync(keys, outputData, outStream);
+                return outStream;
             });
             
         }
 
-
-        private async Task OnSubmit(EventArgs e)
+        private async Task InitiateOutputDownload()
         {
-            _inputFileKey = Guid.NewGuid();
-            _submitButton.ShowLoading("Converting..");
             var stream = _inputFile!.OpenReadStream();
             var tmpPath = Path.GetTempFileName();
             var fs = File.Create(tmpPath);
@@ -99,10 +96,23 @@ namespace RadioConverter.Components.Pages
             await stream.CopyToAsync(fs);
 
             using var outStream = await Convert(fs);
+            if (outStream.Length == 0)
+            {
+                return;
+            }
+
             var fileName = "output.csv";
 
             using var streamRef = new DotNetStreamReference(stream: outStream);
             await JSRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+        }
+
+
+        private async Task OnSubmit(EventArgs e)
+        {
+            _inputFileKey = Guid.NewGuid();
+            _submitButton.ShowLoading("Converting..");
+            await InitiateOutputDownload();
             _submitButton.HideLoading();
         }
     }
