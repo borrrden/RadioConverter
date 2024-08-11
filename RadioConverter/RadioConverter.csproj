@@ -1,10 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\outputs\output_format_chirp.yaml" />
+    <Content Remove="wwwroot\outputs\output_format_ic-9700.yaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\outputs\output_format_chirp.yaml" />
+    <None Include="wwwroot\outputs\output_format_ic-9700.yaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazor.Bootstrap" Version="3.0.0-preview.3" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RadioConverter.Logic\RadioConverter.Logic.csproj" />

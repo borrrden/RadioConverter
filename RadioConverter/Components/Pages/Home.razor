@@ -1,0 +1,52 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Radio Converter</PageTitle>
+
+<HeadContent>
+    <script>
+        window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+            const arrayBuffer = await contentStreamReference.arrayBuffer();
+            const blob = new Blob([arrayBuffer]);
+            const url = URL.createObjectURL(blob);
+            const anchorElement = document.createElement('a');
+            anchorElement.href = url;
+            anchorElement.download = fileName ?? '';
+            anchorElement.click();
+            anchorElement.remove();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</HeadContent>
+
+<div class="container">
+    <div class="row">
+        <h1>Convert Repeater Directory</h1>
+    </div>
+    <div class="row">
+        <div class="col-2">
+            <b>Output Format:</b>
+        </div>
+        <div class="col-auto">
+            <b>Input File:</b>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-2">
+            <select @bind="_outputFormat">
+	            @foreach(var format in OutputFormats)
+	            {
+		            <option value="@format.ToLowerInvariant()">@format</option>
+	            }
+            </select>
+        </div>
+
+        <div class="col-auto">
+            <InputFile OnChange="OnInputChosen" @key="_inputFileKey" />
+        </div>
+
+        <div class="col-auto">
+            <Button Color="ButtonColor.Primary" @onclick="OnSubmit" Disabled="@SubmitDisabled" @ref="_submitButton">Convert</Button>
+        </div>
+    </div>
+</div>

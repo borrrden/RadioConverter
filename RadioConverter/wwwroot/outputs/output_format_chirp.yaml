@@ -1,0 +1,75 @@
+﻿output:
+  columns:
+    - name: Location
+      type: increment
+      start: 1
+    - name: Name
+      type: mapping
+      source: Call
+    - name: Frequency
+      type: mapping
+      source: Input
+    - name: Duplex
+      type: lua
+      inputs:
+        - type: mapping
+          source: Input
+        - type: mapping
+          source: Output
+      script: |
+        function Calculate(input, output)
+          if output > input then
+            return "+"
+          elseif output > input then
+            return "-"
+          else
+            return ""
+          end
+        end
+    - name: Offset
+      type: lua
+      inputs:
+        - type: mapping
+          source: Input
+        - type: mapping
+          source: Output
+      script: |
+        function Calculate(input, output)
+           return Round(math.abs(input - output), 3)
+        end
+    - name: Tone
+      type: mapping
+      source: Tone
+    - name: rToneFreq
+      type: constant
+      value: ""
+    - name: cToneFreq
+      type: constant
+      value: ""
+    - name: DtcsCode
+      type: constant
+      value: ""
+    - name: DtcsPolarity
+      type: constant
+      value: ""
+    - name: Mode
+      type: constant
+      value: ""
+    - name: TStep
+      type: constant
+      value: ""
+    - name: Skip
+      type: constant
+      value: ""
+    - name: Comment
+      type: constant
+      value: ""
+    - name: URCALL
+      type: constant
+      value: ""
+    - name: RPT1CALL
+      type: constant
+      value: ""
+    - name: RPT2CALL
+      type: constant
+      value: ""
