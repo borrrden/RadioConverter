@@ -32,13 +32,18 @@ public sealed class TransformParser
         _transformTypes.AddRange(assembly.GetExportedTypes().Where(x => x.IsClass && !x.IsAbstract && x.GetInterface(typeof(ITransform).FullName!) != null));
     }
 
-    public static IReadOnlyList<IReadOnlyDictionary<string, string>> Apply(IReadOnlyList<RepeaterDirectoryEntry> entries, IReadOnlyDictionary<string, ITransform> transforms)
+    public static IReadOnlyList<IReadOnlyDictionary<string, string>> Apply(IReadOnlyList<RepeaterDirectoryEntry> entries, IReadOnlyDictionary<string, ITransform> transforms, FilterParser? filter = null)
     {
         var retVal = new List<Dictionary<string, string>>();
 
         foreach (var entry in entries)
         {
             var nextResult = new Dictionary<string, string>();
+            if (filter != null && !filter.ShouldInclude(entry))
+            {
+                continue;
+            }
+
             foreach (var transform in transforms)
             {
                 nextResult[transform.Key] = transform.Value.Execute(entry);
